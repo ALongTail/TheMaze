@@ -1,0 +1,217 @@
+#include <iostream>
+#include <graphics.h>
+#include <conio.h>
+#include <mmsystem.h>
+#include <time.h>
+#include <stdio.h>
+#include <windows.h>
+#pragma comment(lib,"winmm.lib")
+void StartWindow();
+void ModelChoose();
+void GameBegin(int Bricks);//生成游戏
+void Handle();//小人跑起来
+void MineSweeper();//一个改编
+void DrawGraph(int i, int j);
+IMAGE image[12];
+const int M = 25;
+const int N = 20;
+int map[N + 2][N + 2];
+int mine[N + 2][N + 2];
+using namespace std;
+int main()
+{
+	int i,j;
+	for (i = 0; i <= N + 1; i++)
+		for (j = 0; j <= N + 1; j++)
+		{
+			map[i][j] = 0;
+			mine[i][j] = 0;
+		}
+	initgraph(M * N, M * N);
+	StartWindow();
+	closegraph();
+}
+void StartWindow()
+{
+	mciSendString(L"open ./背景音乐.mp3 alias bgm", 0, 0, 0);
+	mciSendString(L"play bgm repeat", 0, 0, 0);
+	loadimage(&image[0], L"./image/pic0.jpg", M, M);//0
+	loadimage(&image[1], L"./image/pic1.jpg", M, M);//1
+	loadimage(&image[2], L"./image/pic2.jpg", M, M);//2
+	loadimage(&image[3], L"./image/pic3.jpg", M, M);//3
+	loadimage(&image[4], L"./image/pic4.jpg", M, M);//4
+	loadimage(&image[5], L"./image/pic5.jpg", M, M);//5
+	loadimage(&image[6], L"./image/pic6.jpg", M, M);//6
+	loadimage(&image[7], L"./image/pic7.jpg", M, M);//7
+	loadimage(&image[8], L"./image/pic8.jpg", M * N, M * N);//空地
+	loadimage(&image[9], L"./image/pic9.jpg", M * N, M * N);//背景图
+	loadimage(&image[10], L"./image/pic10.gif", M, M);//人物
+	loadimage(&image[11], L"./image/pic11.jpg", M, M);//小脚印
+	putimage(0, 0, &image[9]);
+	MOUSEMSG msg = { 0 };
+	settextstyle(40, 0, L"微软雅黑");
+	while (1) {
+		msg = GetMouseMsg();
+		if (msg.x > 210 && msg.x < 290 && msg.y >150 && msg.y < 190) {
+			settextcolor(RGB(255, 255, 0));
+			outtextxy(210, 150, L"开始");
+		}
+		else if (msg.x > 210 && msg.x < 290 && msg.y >300 && msg.y < 340) {
+			settextcolor(RGB(255, 255, 0));
+			outtextxy(210, 300, L"退出");
+		}
+		else {
+			settextcolor(RGB(255, 255, 255));
+			outtextxy(210, 150, L"开始");
+			outtextxy(210, 300, L"退出");
+		}
+		switch (msg.uMsg) {
+		case WM_LBUTTONDOWN:
+			if (msg.x > 210 && msg.x < 290 && msg.y >150 && msg.y < 190) {
+				ModelChoose();
+				return;
+			}
+			else if (msg.x > 210 && msg.x < 290 && msg.y >390 && msg.y < 340) {
+				exit(0);
+			}//位置待调整
+		}
+	}
+}
+void ModelChoose()
+{
+	cleardevice();
+	putimage(0, 0, &image[9]);
+	MOUSEMSG msg = { 0 };
+	settextstyle(40, 0, L"微软雅黑");
+	while (1) {
+		msg = GetMouseMsg();
+		if (msg.x > 210 && msg.x < 290 && msg.y >100 && msg.y < 140) {
+			settextcolor(RGB(255, 255, 0));
+			outtextxy(210, 100, L"简单");
+		}
+		else if (msg.x > 210 && msg.x < 290 && msg.y >230 && msg.y < 270) {
+			settextcolor(RGB(255, 255, 0));
+			outtextxy(210, 230, L"中等");
+		}
+		else if (msg.x > 210 && msg.x < 290 && msg.y >360 && msg.y < 400) {
+			settextcolor(RGB(255, 255, 0));
+			outtextxy(210, 360, L"困难");
+		}
+		else {
+			settextcolor(RGB(255, 255, 255));
+			outtextxy(210, 100, L"简单");
+			outtextxy(210, 230, L"中等");
+			outtextxy(210, 360, L"困难");
+		}
+		switch (msg.uMsg) {
+		case WM_LBUTTONDOWN:
+			if (msg.x > 210 && msg.x < 290 && msg.y >100 && msg.y < 140) {
+				GameBegin(25);
+				return;
+			}
+			else if (msg.x > 210 && msg.x < 290 && msg.y >230 && msg.y < 270) {
+				GameBegin(50);
+				return;
+			}
+			else if (msg.x > 210 && msg.x < 190 && msg.y >360 && msg.y < 400) {
+				GameBegin(100);
+				return;//难度待调整
+			}
+		}
+	}
+}
+void GameBegin(int Bricks)
+{
+	int i;
+	int x, y, br = 0;
+	for (i = 0; i <= N + 1; i++)
+	{
+		map[0][i] = -1;
+		map[i][0] = -1;
+		map[N + 1][i] = -1;
+		map[i][N + 1] = -1;
+	}
+		while (br < Bricks)
+		{
+			x = rand() % N + 1;
+			y = rand() % N + 1;
+			if (map[x][y] != -1)
+			{
+				map[x][y] = -1;
+				br++;
+			}
+		}
+		Handle(); 
+}
+void Handle()
+{
+	char c;
+	int i = 1, j = 1, x = 0, y = 0;
+	cleardevice();
+	putimage(0, 0, &image[8]);
+	MineSweeper();
+	DrawGraph(2, 2);
+	while (1)
+	{
+	    HWND hWnd = GetHWnd();
+	    srand((unsigned)time(NULL));
+		if (map[i][j] == -1)//失败
+		{
+			if (MessageBox(hWnd, L"您去世啦！", L"失败", MB_RETRYCANCEL) == IDRETRY)
+				ModelChoose();
+			else
+				exit(0);
+			break;
+		}
+		else if (i == N && j == N)//成功
+		{
+			if (MessageBox(hWnd, L"您出去啦！", L"成功", MB_RETRYCANCEL) == IDRETRY)
+				ModelChoose();
+			else
+				exit(0);
+			break;
+		}
+		mine[i][j] = -1;//标记已经走过的路
+		DrawGraph(i, j);
+		putimage(x, y, &image[10]);
+		while (1)
+		{
+			if (_kbhit())
+			{
+				c = _getch();
+				putimage(x, y, &image[11]);
+				if (c == 'w' || c == 'W')
+				{
+					y -= M; j -= 1; break;
+				}
+				else if (c == 's' || c == 'S')
+				{
+					y += M; j += 1; break;
+				}
+				else if (c == 'a' || c == 'A')
+				{
+					x -= M; i -= 1; break;
+				}
+				else if (c == 'd' || c == 'D')
+					x += M; i += 1; break;
+			}
+		}//移动
+	}
+}
+void MineSweeper()
+{
+	int i, j;
+	for (i = 1; i <= N; i++)
+		for (j = 1; j <= N; j++)
+		{
+			mine[i][j] = -(map[i + 1][j] + map[i + 1][j + 1] + map[i + 1][j - 1] + map[i][j - 1] + map[i][j + 1] + map[i - 1][j] + map[i - 1][j + 1] + map[i - 1][j - 1]);
+		}
+}
+void DrawGraph(int i, int j)
+{
+	int a, b;
+	for (a = i - 1; a <= i + 1; a++)
+		for (b = j - 1; b <= j + 1; b++)
+			if (mine[a][b] >= 0 && a > 0 && b > 0)
+				putimage((a - 1) * M, (b - 1) * M, &image[mine[a][b]]);
+}
